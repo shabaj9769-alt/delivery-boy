@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Manor Mart Delivery",
+    "slug": "delivery-boy-",
+    "owner": "jssjsjs-team",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#e65100"
+    },
+    "android": {
+      "package": "com.manormart.delivery",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#e65100"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.manormart.delivery",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Manor Mart Delivery uses your location to show directions to the customer's address."
+      }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#e65100"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f5731ed7-b676-459a-9d2d-f0dff0de3d30"
+      }
+    }
+  }
+}

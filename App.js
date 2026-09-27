@@ -19,6 +19,7 @@ import { Audio } from 'expo-av';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 
 const FIREBASE_DB = "https://manorbiryani-default-rtdb.firebaseio.com/";
 const API_BASE = "https://manormart-pay.vercel.app/api";
@@ -316,6 +317,13 @@ export default function DeliveryBoyApp() {
 
   const registerBoyPushToken = async () => {
     if (Platform.OS === 'web') return;
+    // Remote push tokens (getExpoPushTokenAsync) are NOT supported inside
+    // Expo Go / Snack since SDK 53 - calling it there was crashing the app
+    // right after login. Only attempt this in a real standalone/EAS build.
+    if (Constants.appOwnership === 'expo' || Constants.executionEnvironment === 'storeClient') {
+      console.log('Skipping push token registration - remote push needs a real build, not Expo Go/Snack.');
+      return;
+    }
     try {
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {

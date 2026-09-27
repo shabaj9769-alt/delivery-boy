@@ -5,14 +5,17 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "packageManager": "npm"
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "packageManager": "npm"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "packageManager": "npm"
     }
   },
   "submit": {

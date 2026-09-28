@@ -17,7 +17,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 
@@ -40,16 +39,6 @@ const authFetch = (url, opts) => {
     return res;
   });
 };
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
 
 // Steps an order goes through once it reaches this app.
 const ACTIVE_STATUSES = ['Assigned', 'Out for Delivery'];
@@ -103,6 +92,12 @@ export default function DeliveryBoyApp() {
   // ---------------- Session bootstrap ----------------
 
   useEffect(() => {
+    AsyncStorage.getItem('last_js_error').then((err) => {
+      if (err) {
+        AsyncStorage.removeItem('last_js_error').catch(() => {});
+        Alert.alert('Last crash (JS error)', err);
+      }
+    }).catch(() => {});
     restoreSession();
     const appStateSub = AppState.addEventListener('change', (state) => {
       if (state === 'active' && refreshTokenRef.current) refreshBoyToken();
@@ -133,7 +128,8 @@ export default function DeliveryBoyApp() {
     setIsAuthenticated(true);
     onAuthRejected = () => lockApp('Your session has expired. Please log in again.');
     loadMyOrders();
-    registerBoyPushToken(key);
+    // Give the UI a moment to settle before touching native push code.
+    setTimeout(() => registerBoyPushToken(key), 3000);
   };
 
   const persistSession = async (data) => {
@@ -342,6 +338,20 @@ export default function DeliveryBoyApp() {
       }
     } catch (e) {}
     try {
+      // expo-notifications is loaded lazily (not at app start) so a native
+      // problem in it can never crash the app before the login screen.
+      await AsyncStorage.setItem(GUARD, 'import');
+      const Notifications = require('expo-notifications');
+      await AsyncStorage.setItem(GUARD, 'handler');
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
       await AsyncStorage.setItem(GUARD, 'channel');
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {

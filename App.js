@@ -121,7 +121,7 @@ export default function DeliveryBoyApp() {
       setBoyName(saved.name || '');
       setBoyPhone(saved.phone || '');
       const ok = await refreshBoyToken();
-      if (ok) startSession();
+      if (ok) startSession(saved.boyKey);
     } catch (e) {
       // ignore, fall through to login screen
     } finally {
@@ -129,11 +129,11 @@ export default function DeliveryBoyApp() {
     }
   };
 
-  const startSession = () => {
+  const startSession = (key) => {
     setIsAuthenticated(true);
     onAuthRejected = () => lockApp('Your session has expired. Please log in again.');
     loadMyOrders();
-    registerBoyPushToken();
+    registerBoyPushToken(key);
   };
 
   const persistSession = async (data) => {
@@ -197,7 +197,7 @@ export default function DeliveryBoyApp() {
         phone: (d.boy && d.boy.phone) || phone, refreshToken: d.refreshToken || ''
       });
       setCodeInput('');
-      startSession();
+      startSession(d.boyKey);
     } catch (e) {
       Alert.alert('Network Error', 'Could not reach the server. Please check your internet connection.');
     } finally {
@@ -315,7 +315,8 @@ export default function DeliveryBoyApp() {
 
   // ---------------- Push notifications ----------------
 
-  const registerBoyPushToken = async () => {
+  const registerBoyPushToken = async (key) => {
+    const bk = key || boyKey;
     if (Platform.OS === 'web') return;
     // Remote push tokens (getExpoPushTokenAsync) are NOT supported inside
     // Expo Go / Snack since SDK 53 - calling it there was crashing the app
@@ -324,7 +325,24 @@ export default function DeliveryBoyApp() {
       console.log('Skipping push token registration - remote push needs a real build, not Expo Go/Snack.');
       return;
     }
+    // Crash guard: a native crash (e.g. missing Firebase config) can't be caught
+    // by try/catch. We write a marker before each risky step and clear it at the
+    // end. If the marker is still there on the next launch, the last attempt
+    // crashed, so we skip push registration and tell you which step it was.
+    const GUARD = 'push_crash_guard';
     try {
+      const crashedAt = await AsyncStorage.getItem(GUARD);
+      if (crashedAt) {
+        console.log('Skipping push registration - previous attempt crashed at:', crashedAt);
+        if (!crashedAt.startsWith('reported:')) {
+          await AsyncStorage.setItem(GUARD, 'reported:' + crashedAt);
+          Alert.alert('Push disabled', 'App crashed last time at step: ' + crashedAt + '. Push notifications are turned off. Send this step name to the developer.');
+        }
+        return;
+      }
+    } catch (e) {}
+    try {
+      await AsyncStorage.setItem(GUARD, 'channel');
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
           name: 'New Task Alerts',
@@ -334,29 +352,34 @@ export default function DeliveryBoyApp() {
           vibrationPattern: [0, 700, 300, 700],
         });
       }
-      if (!Device.isDevice) return;
+      if (!Device.isDevice) { await AsyncStorage.removeItem(GUARD).catch(() => {}); return; }
+      await AsyncStorage.setItem(GUARD, 'permission');
       const { status: existing } = await Notifications.getPermissionsAsync();
       let finalStatus = existing;
       if (existing !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      if (finalStatus !== 'granted') return;
+      if (finalStatus !== 'granted') { await AsyncStorage.removeItem(GUARD).catch(() => {}); return; }
+      await AsyncStorage.setItem(GUARD, 'token');
 
       // EAS projectId (from app.json -> extra.eas.projectId), needed for
       // push token registration to work on real builds (outside Expo Go).
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: "f5731ed7-b676-459a-9d2d-f0dff0de3d30"
+        projectId: Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
       });
-      if (tokenData?.data && boyKey) {
+      await AsyncStorage.setItem(GUARD, 'save-token');
+      if (tokenData?.data && bk) {
         await authFetch(API_BASE + '/delivery-partners', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${BOY_TOKEN}` },
-          body: JSON.stringify({ action: 'updateBoyPushToken', boyId: boyKey, pushToken: tokenData.data })
+          body: JSON.stringify({ action: 'updateBoyPushToken', boyId: bk, pushToken: tokenData.data })
         }).catch(() => {});
       }
+      await AsyncStorage.removeItem(GUARD).catch(() => {});
     } catch (e) {
       console.log('Push registration error:', e);
+      await AsyncStorage.removeItem(GUARD).catch(() => {});
     }
   };
 

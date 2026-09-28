@@ -15,6 +15,7 @@
     },
     "android": {
       "package": "com.manormart.delivery",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#e65100"

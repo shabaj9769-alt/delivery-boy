@@ -70,9 +70,27 @@ to look.
 ## Project structure
 
 ```
-App.js          - the whole app (login, active deliveries, today's summary)
-app.json        - Expo config
-eas.json        - EAS build profiles
-index.js        - Expo entry point
-package.json    - dependencies (matches the SDK 54 used by the other apps)
+App.js                      - root: wires hooks together, picks the screen
+index.js                    - Expo entry point (installs crash reporter)
+app.json / eas.json         - Expo + EAS config
+src/
+  config/constants.js       - URLs, storage key, polling intervals
+  theme/colors.js           - shared colors
+  services/
+    api.js                  - in-memory token + authFetch (401/403 handling)
+    session.js              - login, token refresh, saved session (AsyncStorage)
+    orders.js               - Firebase reads/writes for orders & partner status
+    push.js                 - push-token registration (with crash guard)
+  hooks/
+    useAuth.js              - login/logout/restore session/token refresh
+    useOrders.js            - order polling + Start/Delivered actions
+    useSiren.js             - new-order siren + vibration
+  screens/
+    SplashScreen.js  LoginScreen.js  DashboardScreen.js
+  components/
+    Header  StatCard  OrderCard  DeliveredSection  SirenBanner
+  utils/
+    helpers.js              - formatting, stats, payment-verified rule
+    contact.js              - call customer / Google Maps navigation
+    crashReporter.js        - saves last JS error, shows it on next launch
 ```

@@ -2,7 +2,7 @@
   "expo": {
     "name": "delivery boy",
     "slug": "delivery-boy-",
-    "owner": "shabaj000s-team",
+    "owner": "amjad93614s-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -45,7 +45,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "046eb482-f9d0-4316-aca4-7291d5258e69"
+        "projectId": "a2304ba8-782e-4cdb-ad4a-bc973a129176"
       }
     }
   }
